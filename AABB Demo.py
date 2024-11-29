@@ -1,6 +1,7 @@
 #Mason Bledsoe 2D Collision Detection 11.22.2024
 import pygame as pg
 import random
+import math
 
 pg.init()
 width = 946
@@ -9,7 +10,7 @@ screen = pg.display.set_mode((width,height))
 clock = pg.time.Clock()
 pg.display.set_caption('AABB Demo')
 running = True
-score = 0 
+stage = 0
 coinHolder = []
 framerates = []
 backgroundIMG = pg.image.load('NicotineHotdog4.jpg')
@@ -32,7 +33,7 @@ class Player:
     def DrawSelf(self, color):
         pg.draw.rect(screen, color, pg.Rect(self.posV2, self.size))
     
-    def CheckCollisions(self, others):
+    def CheckCollisionsAABB(self, others):
         for other in others:
             if (self.posV2[0] > other.posV2[0]) and (self.posV2[0] < other.posV2[0] + other.size[0]):
                 if (self.posV2[1] > other.posV2[1]) and (self.posV2[1] < other.posV2[1] + other.size[1]):
@@ -54,6 +55,24 @@ class Player:
                     self.score += other.value
                     others.remove(other)
                     return None
+    def CheckCollisionsBTS(self, others):
+        for other in others:
+            if (other.size[0]/2 > math.sqrt(((self.posV2[0] - other.posV2[0]) ** 2) + (self.posV2[1] - other.posV2[1]) ** 2)):
+                    self.score += other.value
+                    others.remove(other)
+                    return None
+            if (other.size[0]/2 > math.sqrt((((self.posV2[0]+self.size[0]) - other.posV2[0]) ** 2) + (self.posV2[1] - other.posV2[1]) ** 2)):
+                    self.score += other.value
+                    others.remove(other)
+                    return None
+            if (other.size[0]/2 > math.sqrt(((self.posV2[0] - other.posV2[0]) ** 2) + ((self.posV2[1]+self.size[0]) - other.posV2[1]) ** 2)):
+                    self.score += other.value
+                    others.remove(other)
+                    return None
+            if (other.size[0]/2 > math.sqrt((((self.posV2[0]+self.size[0]) - other.posV2[0]) ** 2) + ((self.posV2[1]+self.size[0]) - other.posV2[1]) ** 2)):
+                    self.score += other.value
+                    others.remove(other)
+                    return None
                     
 class Coin:
     def __init__(self, spawnX, spawnY, edgeLength, value = 1):
@@ -64,8 +83,12 @@ class Coin:
     def __del__(self):
         print("Coin Grabbed")
         
-    def DrawSelf(self, color):
-        pg.draw.rect(screen, color, pg.Rect(self.posV2, self.size))
+    def DrawSelf(self, shape, color):
+        if shape == 'Square':
+            pg.draw.rect(screen, color, pg.Rect(self.posV2, self.size))
+        if shape == 'Circle':
+            pg.draw.circle(screen, color, self.posV2, self.size[0]/2)
+
         
 #End Classes
         
@@ -85,12 +108,13 @@ def _KeepInBounds(OBJ):
         OBJ.posV2[1] = height - OBJ.size[0]
         
         
-def _GenerateCoins(amt=5):
+def _GenerateCollectable(amt=5):
     for x in range(0, amt):
-        coinHolder.append(Coin(random.randint(20, 620), random.randint(20, 460), 20))
+        coinHolder.append(Coin(random.randint(20, 920), random.randint(20, 445), 20))
         
-def _UpdateScore(ScoreValue):
+def _UpdateScore(Stage, ScoreValue):
     score = ScoreValue
+    stage = Stage
     #Score print out  https://www.geeksforgeeks.org/python-display-text-to-pygame-window/
     text = font.render('Score: ' + str(score), True, 'white')
  
@@ -101,6 +125,9 @@ def _UpdateScore(ScoreValue):
     # set the center of the rectangular object.
     textRect.center = (65, 20)
     screen.blit(text, textRect)
+    if score >= 15:
+        stage = 1
+    return stage
 
 def _PrintFrameRate():
     text = font.render('FPS: ' + str(int(clock.get_fps())), True, 'white')
@@ -138,7 +165,7 @@ def _CalcAvgFrameRate():
 #Construct our Player Square       
 Player1 = Player((width/2) - 10, (height/2) - 10, 20)
 #Generate the Initial Coins
-_GenerateCoins()
+_GenerateCollectable()
 
 #Run Pygame from https://www.pygame.org/docs/
 while running:
@@ -149,17 +176,19 @@ while running:
             running = False
     
     if len(coinHolder) == 0:
-        _GenerateCoins(10)
+        _GenerateCollectable(10)
         
     # fill the screen with a color to wipe away anything from last frame
-    screen.fill("black")
+    if stage == 0:
+        screen.fill("black")
+    if stage == 1:
+        screen.fill("grey")
     if Player1.score > 69:
         screen.blit(backgroundIMG, backgroundRect)
 
     # RENDER YOUR GAME HERE
     Player1.DrawSelf('Blue')
-    for coin in coinHolder:
-        coin.DrawSelf('Yellow')
+    
     
     #Input Handling
     moveValueY = 0
@@ -176,12 +205,22 @@ while running:
     
     Player1.Movement(moveValueX, moveValueY)
     _KeepInBounds(Player1)
-    Player1.CheckCollisions(coinHolder)
-    _UpdateScore(Player1.score)
+    if stage == 0:
+        #print(stage)
+        for coin in coinHolder:
+            coin.DrawSelf('Square','Yellow')
+        Player1.CheckCollisionsAABB(coinHolder)
+    if stage == 1:
+        #print(stage)
+        for coin in coinHolder:
+            coin.DrawSelf('Circle','Yellow')
+        Player1.CheckCollisionsBTS(coinHolder)
+
+    stage = _UpdateScore(stage, Player1.score)
     _PrintFrameRate()
     #_CalcAvgFrameRate()
     # flip() the display to put your work on screen
     pg.display.flip()
-    dt = clock.tick(10000) / 1000
+    dt = clock.tick(500) / 1000
 
 pg.quit()
