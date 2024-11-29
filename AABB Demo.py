@@ -3,13 +3,19 @@ import pygame as pg
 import random
 
 pg.init()
-width = 640
-height = 480
+width = 946
+height = 455
 screen = pg.display.set_mode((width,height))
 clock = pg.time.Clock()
+pg.display.set_caption('AABB Demo')
 running = True
-numCoins = 0
+score = 0 
 coinHolder = []
+framerates = []
+backgroundIMG = pg.image.load('NicotineHotdog4.jpg')
+backgroundRect = backgroundIMG.get_rect()
+font = pg.font.Font('freesansbold.ttf', 32)
+
 
 #Classes
 class Player:
@@ -33,18 +39,18 @@ class Player:
                     self.score += other.value
                     others.remove(other)
                     return None
-            if (self.posV2[0] + 20 > other.posV2[0]) and (self.posV2[0] + 20 < other.posV2[0] + other.size[0]):
+            if (self.posV2[0] + self.size[0] > other.posV2[0]) and (self.posV2[0] + 20 < other.posV2[0] + other.size[0]):
                 if (self.posV2[1] > other.posV2[1]) and (self.posV2[1] < other.posV2[1] + other.size[1]):
                     self.score += other.value
                     others.remove(other)
                     return None
             if (self.posV2[0] > other.posV2[0]) and (self.posV2[0] < other.posV2[0] + other.size[0]):
-                if (self.posV2[1] + 20 > other.posV2[1]) and (self.posV2[1] + 20 < other.posV2[1] + other.size[1]):
+                if (self.posV2[1] + self.size[1]  > other.posV2[1]) and (self.posV2[1] + self.size[1]  < other.posV2[1] + other.size[1]):
                     self.score += other.value
                     others.remove(other)
                     return None
-            if (self.posV2[0] + 20 > other.posV2[0]) and (self.posV2[0] + 20 < other.posV2[0] + other.size[0]):
-                if (self.posV2[1] + 20 > other.posV2[1]) and (self.posV2[1] + 20 < other.posV2[1] + other.size[1]):
+            if (self.posV2[0] + self.size[0]  > other.posV2[0]) and (self.posV2[0] + self.size[0]  < other.posV2[0] + other.size[0]):
+                if (self.posV2[1] + self.size[1]  > other.posV2[1]) and (self.posV2[1] + self.size[1]  < other.posV2[1] + other.size[1]):
                     self.score += other.value
                     others.remove(other)
                     return None
@@ -81,11 +87,57 @@ def _KeepInBounds(OBJ):
         
 def _GenerateCoins(amt=5):
     for x in range(0, amt):
-        coinHolder.append(Coin(random.randint(20, 620), random.randint(20, 460), 20))   
+        coinHolder.append(Coin(random.randint(20, 620), random.randint(20, 460), 20))
+        
+def _UpdateScore(ScoreValue):
+    score = ScoreValue
+    #Score print out  https://www.geeksforgeeks.org/python-display-text-to-pygame-window/
+    text = font.render('Score: ' + str(score), True, 'white')
+ 
+    # create a rectangular object for the
+    # text surface object
+    textRect = text.get_rect()
+     
+    # set the center of the rectangular object.
+    textRect.center = (65, 20)
+    screen.blit(text, textRect)
+
+def _PrintFrameRate():
+    text = font.render('FPS: ' + str(int(clock.get_fps())), True, 'white')
+ 
+    # create a rectangular object for the
+    # text surface object
+    textRect = text.get_rect()
+     
+    # set the center of the rectangular object.
+    textRect.center = (width - 80,  20)
+    screen.blit(text, textRect)
+    
+def _CalcAvgFrameRate():
+    runningTotal = 0
+    framerates.append(int(clock.get_fps()))
+    
+    for framerate in framerates:
+        runningTotal += framerate
+        
+    avgFPS = runningTotal/len(framerates)
+    
+    text = font.render('AVG_FPS: ' + str(int(avgFPS)), True, 'white')
+ 
+    # create a rectangular object for the
+    # text surface object
+    textRect = text.get_rect()
+     
+    # set the center of the rectangular object.
+    textRect.center = (width - 121,  45)
+    screen.blit(text, textRect)
+    #print(avgFPS)
+    
 #End Functions
         
 #Construct our Player Square       
 Player1 = Player((width/2) - 10, (height/2) - 10, 20)
+#Generate the Initial Coins
 _GenerateCoins()
 
 #Run Pygame from https://www.pygame.org/docs/
@@ -98,12 +150,14 @@ while running:
     
     if len(coinHolder) == 0:
         _GenerateCoins(10)
-    
+        
     # fill the screen with a color to wipe away anything from last frame
     screen.fill("black")
+    if Player1.score > 69:
+        screen.blit(backgroundIMG, backgroundRect)
 
     # RENDER YOUR GAME HERE
-    Player1.DrawSelf('Red')
+    Player1.DrawSelf('Blue')
     for coin in coinHolder:
         coin.DrawSelf('Yellow')
     
@@ -119,13 +173,15 @@ while running:
         moveValueX -= 100 * dt
     if keys[pg.K_d]:
         moveValueX += 100 * dt
-        
+    
     Player1.Movement(moveValueX, moveValueY)
     _KeepInBounds(Player1)
     Player1.CheckCollisions(coinHolder)
+    _UpdateScore(Player1.score)
+    _PrintFrameRate()
+    #_CalcAvgFrameRate()
     # flip() the display to put your work on screen
     pg.display.flip()
-    print(Player1.score)
-    dt = clock.tick(60) / 1000
+    dt = clock.tick(10000) / 1000
 
 pg.quit()
