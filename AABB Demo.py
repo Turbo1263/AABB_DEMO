@@ -4,7 +4,13 @@ import random
 import math
 
 #EDIT ME
-speed = 100
+speed = 1
+
+playerHeight = 20
+playerWidth = 20
+
+collectWidth = 20
+collectHeight = 20
 
 
 
@@ -16,7 +22,8 @@ screen = pg.display.set_mode((width,height))
 clock = pg.time.Clock()
 pg.display.set_caption('AABB Demo')
 running = True
-stage = 0
+stage = 0a
+fps = 500
 coinHolder = []
 framerates = []
 backgroundIMG = pg.image.load('NicotineHotdog4.jpg')
@@ -26,68 +33,78 @@ font = pg.font.Font('freesansbold.ttf', 32)
 
 #Classes
 class Player:
-    def __init__(self, spawnX, spawnY, edgeLength):
+    def __init__(self, spawnX, spawnY, width, height):
         self.posV2 = [spawnX, spawnY]
-        self.size = [edgeLength, edgeLength]
+        self.size = [width, height]
         self.score = 0
-    
+        self.XMin = self.posV2[0]
+        self.XMax = self.posV2[0] + self.size[0]
+        self.YMin = self.posV2[1]
+        self.YMax = self.posV2[1] + self.size[1]
+
     def Movement(self, updateX, updateY):
         self.posV2[0] += updateX
         self.posV2[1] += updateY
+        self.Update()
         #print(self.posV2)
+        
+    def Update(self):
+        self.XMin = self.posV2[0]
+        self.XMax = self.posV2[0] + self.size[0]
+        self.YMin = self.posV2[1]
+        self.YMax = self.posV2[1] + self.size[1]
         
     def DrawSelf(self, color):
         pg.draw.rect(screen, color, pg.Rect(self.posV2, self.size))
     
     def CheckCollisionsAABB(self, others):
         for other in others:
-            if (self.posV2[0] > other.posV2[0]) and (self.posV2[0] < other.posV2[0] + other.size[0]):
-                if (self.posV2[1] > other.posV2[1]) and (self.posV2[1] < other.posV2[1] + other.size[1]):
-                    self.score += other.value
-                    others.remove(other)
-                    return None
-            if (self.posV2[0] + self.size[0] > other.posV2[0]) and (self.posV2[0] + 20 < other.posV2[0] + other.size[0]):
-                if (self.posV2[1] > other.posV2[1]) and (self.posV2[1] < other.posV2[1] + other.size[1]):
-                    self.score += other.value
-                    others.remove(other)
-                    return None
-            if (self.posV2[0] > other.posV2[0]) and (self.posV2[0] < other.posV2[0] + other.size[0]):
-                if (self.posV2[1] + self.size[1]  > other.posV2[1]) and (self.posV2[1] + self.size[1]  < other.posV2[1] + other.size[1]):
-                    self.score += other.value
-                    others.remove(other)
-                    return None
-            if (self.posV2[0] + self.size[0]  > other.posV2[0]) and (self.posV2[0] + self.size[0]  < other.posV2[0] + other.size[0]):
-                if (self.posV2[1] + self.size[1]  > other.posV2[1]) and (self.posV2[1] + self.size[1]  < other.posV2[1] + other.size[1]):
-                    self.score += other.value
-                    others.remove(other)
-                    return None
+            if (self.XMin <= other.XMax and self.XMax >= other.XMin and self.YMin <= other.YMax and self.YMax >= other.YMin):
+                self.score += other.value
+                others.remove(other)
+                return None
+
     def CheckCollisionsBTS(self, others):
         for other in others:
-            if (other.size[0]/2 > math.sqrt(((self.posV2[0] - other.posV2[0]) ** 2) + (self.posV2[1] - other.posV2[1]) ** 2)):
+            point = _GetClosestPoint(self, other)
+            if (other.size[0]/2 > math.sqrt(((point[0] - other.posV2[0]) ** 2) + (point[1] - other.posV2[1]) ** 2)):
                     self.score += other.value
                     others.remove(other)
-                    return None
-            if (other.size[0]/2 > math.sqrt((((self.posV2[0]+self.size[0]) - other.posV2[0]) ** 2) + (self.posV2[1] - other.posV2[1]) ** 2)):
-                    self.score += other.value
-                    others.remove(other)
-                    return None
-            if (other.size[0]/2 > math.sqrt(((self.posV2[0] - other.posV2[0]) ** 2) + ((self.posV2[1]+self.size[0]) - other.posV2[1]) ** 2)):
-                    self.score += other.value
-                    others.remove(other)
-                    return None
-            if (other.size[0]/2 > math.sqrt((((self.posV2[0]+self.size[0]) - other.posV2[0]) ** 2) + ((self.posV2[1]+self.size[0]) - other.posV2[1]) ** 2)):
-                    self.score += other.value
-                    others.remove(other)
-                    return None
-                    
+
 class Coin:
     def __init__(self, spawnX, spawnY, edgeLength, value = 1):
         self.posV2 = [spawnX, spawnY]
         self.size = [edgeLength, edgeLength]
         self.value = value
+        self.XMin = self.posV2[0]
+        self.XMax = self.posV2[0] + self.size[0]
+        self.YMin = self.posV2[1]
+        self.YMax = self.posV2[1] + self.size[1]
+        self.counter = 0
+        self.dirX = random.randint(-1,1)
+        self.dirY = random.randint(-1,1)
         
     def __del__(self):
         print("Coin Grabbed")
+    
+    def Update(self):
+        self.XMin = self.posV2[0]
+        self.XMax = self.posV2[0] + self.size[0]
+        self.YMin = self.posV2[1]
+        self.YMax = self.posV2[1] + self.size[1]
+    
+    def Hover(self, dt, steps=fps, speed=40):
+        if self.counter < steps:
+            self.posV2[0] += (speed * dt) * self.dirX
+            self.posV2[1] += (speed * dt) * self.dirY
+        if self.counter > steps:
+            self.counter = 0
+            self.dirX = random.randint(-1,1)
+            self.dirY = random.randint(-1,1)
+        self.counter += 1
+        
+        self.Update()
+            
         
     def DrawSelf(self, shape, color):
         if shape == 'Square':
@@ -99,6 +116,22 @@ class Coin:
 #End Classes
         
 #Functions
+            
+def clamp(val, cMin, cMax):
+    if (val > cMin) and (val < cMax):
+        return val
+    elif (val < cMin):
+        return cMin
+    else:
+        return cMax
+    
+def _GetClosestPoint(obj1, obj2):
+  
+    x = max(obj1.XMin, min(obj2.posV2[0], obj1.XMax))
+    y = max(obj1.YMin, min(obj2.posV2[1], obj1.YMax))
+    
+    return[x, y]
+
 def _KeepInBounds(OBJ):
     #Stay Right of the Left Side of the Screen
     if OBJ.posV2[0] < 0:
@@ -131,8 +164,12 @@ def _UpdateScore(Stage, ScoreValue):
     # set the center of the rectangular object.
     textRect.center = (65, 20)
     screen.blit(text, textRect)
-    if score >= 15:
+    if score >= 10:
         stage = 1
+    if score >= 20:
+        stage = 2
+    if score >= 30:
+        stage = 3
     return stage
 
 def _PrintFrameRate():
@@ -169,12 +206,13 @@ def _CalcAvgFrameRate():
 #End Functions
         
 #Construct our Player Square       
-Player1 = Player((width/2) - 10, (height/2) - 10, 20)
+Player1 = Player((width/2) - 10, (height/2) - 10, playerWidth, playerHeight)
 #Generate the Initial Coins
-_GenerateCollectable()
+_GenerateCollectable(10)
 
 #Run Pygame from https://www.pygame.org/docs/
 while running:
+    dt = clock.tick(fps) / 1000
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
     for event in pg.event.get():
@@ -189,8 +227,13 @@ while running:
         screen.fill("black")
     if stage == 1:
         screen.fill("grey")
+    if stage == 2:
+        screen.fill("red")
+    if stage == 3:
+        screen.fill("black")
     if Player1.score > 69:
-        screen.blit(backgroundIMG, backgroundRect)
+        pass
+        #screen.blit(backgroundIMG, backgroundRect)
 
     # RENDER YOUR GAME HERE
     Player1.DrawSelf('Blue')
@@ -201,32 +244,32 @@ while running:
     moveValueX = 0
     keys = pg.key.get_pressed()
     if keys[pg.K_w]:
-        moveValueY -= speed * dt
+        moveValueY -= dt * ((speed + stage*.5) * 100)
     if keys[pg.K_s]:
-        moveValueY += speed * dt
+        moveValueY += dt * ((speed + stage*.5) * 100)
     if keys[pg.K_a]:
-        moveValueX -= speed * dt
+        moveValueX -= dt * ((speed + stage*.5) * 100)
     if keys[pg.K_d]:
-        moveValueX += speed * dt
+        moveValueX += dt * ((speed + stage*.5) * 100)
     
     Player1.Movement(moveValueX, moveValueY)
     _KeepInBounds(Player1)
-    if stage == 0:
-        #print(stage)
-        for coin in coinHolder:
+    for coin in coinHolder:
+        if ((stage == 2) or (stage == 3)):
+            coin.Hover(dt)
+        _KeepInBounds(coin)
+        if ((stage == 0) or (stage == 2)):
             coin.DrawSelf('Square','Yellow')
-        Player1.CheckCollisionsAABB(coinHolder)
-    if stage == 1:
-        #print(stage)
-        for coin in coinHolder:
+            Player1.CheckCollisionsAABB(coinHolder)
+        if ((stage == 1) or (stage == 3)):
             coin.DrawSelf('Circle','Yellow')
-        Player1.CheckCollisionsBTS(coinHolder)
+            Player1.CheckCollisionsBTS(coinHolder)
 
     stage = _UpdateScore(stage, Player1.score)
     _PrintFrameRate()
     #_CalcAvgFrameRate()
     # flip() the display to put your work on screen
     pg.display.flip()
-    dt = clock.tick(500) / 1000
+    
 
 pg.quit()
