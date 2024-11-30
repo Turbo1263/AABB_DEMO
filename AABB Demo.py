@@ -3,6 +3,12 @@ import pygame as pg
 import random
 import math
 
+#EDIT ME
+speed = 100
+
+
+
+#DO NOT EDIT ME
 pg.init()
 width = 946
 height = 455
@@ -195,13 +201,13 @@ while running:
     moveValueX = 0
     keys = pg.key.get_pressed()
     if keys[pg.K_w]:
-        moveValueY -= 100 * dt
+        moveValueY -= speed * dt
     if keys[pg.K_s]:
-        moveValueY += 100 * dt
+        moveValueY += speed * dt
     if keys[pg.K_a]:
-        moveValueX -= 100 * dt
+        moveValueX -= speed * dt
     if keys[pg.K_d]:
-        moveValueX += 100 * dt
+        moveValueX += speed * dt
     
     Player1.Movement(moveValueX, moveValueY)
     _KeepInBounds(Player1)
