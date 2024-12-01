@@ -63,7 +63,7 @@ class Player:
                 self.score += other.value
                 others.remove(other)
                 return None
-
+        #found both methods here: https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
     def CheckCollisionsBTS(self, others):
         for other in others:
             point = _GetClosestPoint(self, other)
