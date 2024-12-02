@@ -22,7 +22,7 @@ screen = pg.display.set_mode((width,height))
 clock = pg.time.Clock()
 pg.display.set_caption('AABB Demo')
 running = True
-stage = 0a
+stage = 0
 fps = 500
 coinHolder = []
 framerates = []
