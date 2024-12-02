@@ -68,8 +68,8 @@ class Player:
         for other in others:
             point = _GetClosestPoint(self, other)
             if (other.size[0]/2 > math.sqrt(((point[0] - other.posV2[0]) ** 2) + (point[1] - other.posV2[1]) ** 2)):
-                    self.score += other.value
-                    others.remove(other)
+                self.score += other.value
+                others.remove(other)
 
 class Coin:
     def __init__(self, spawnX, spawnY, edgeLength, value = 1):
